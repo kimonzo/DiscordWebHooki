@@ -8,6 +8,7 @@
   "maxPages": 5,
   "colorGreeted": 16756802,
   "colorMissed": 7419299,
+  "colorRescued": 3066993,
   "greetings": [
     "dzien dobry",
     "dziendobry",
@@ -57,6 +58,18 @@
     "{user} — 8:30, zero powitania. Kogut próbował, ja próbuję, może Ty spróbujesz jutro.",
     "Uwaga {user}, to jest przypomnienie. Więcej nie mam — milknę do jutra jak dżentelmen. 🫡"
   ],
+  "rescues": [
+    "Dzień uratowany! 🎉 {user} jednak napisał „dzień dobry\". Spóźniony, ale jest — seria wraca do {streak}.",
+    "No i proszę — {user} się odezwał. Dzień uratowany, seria uratowana ({streak}). Wiedziałem, że Cię stać.",
+    "{user} jednak żyje! ⏰ Spóźnione „dzień dobry\" przyjęte, dzień zaliczony — seria: {streak}.",
+    "Alarm odwołany. 🚨 {user} napisał, dzień uratowany, seria nietknięta: {streak}. Następnym razem przed 8:30, co?",
+    "Lepiej późno niż wcale — {user} przywitał się po czasie. Dzień uratowany, seria {streak}. Kogut wybacza.",
+    "{user}, było blisko. Ale napisałeś. Dzień uratowany, seria wraca na {streak}. 🫡",
+    "Zwrot akcji! {user} jednak powiedział „dzień dobry\". Pudło anulowane, seria: {streak} dni.",
+    "Uff. {user} się odezwał zanim dzień się skończył. Dzień uratowany, seria {streak} trzyma się mocno.",
+    "Cud nad kanałem: {user} napisał „dzień dobry\" — z opóźnieniem, ale liczy się. Seria: {streak}.",
+    "{user} w ostatniej chwili ratuje serię. Dzień uratowany, {streak} dni z rzędu. Emocje jak w finale."
+  ],
   "gifQueriesGreeted": [
     "dzień dobry",
     "good morning",
@@ -71,6 +84,14 @@
     "alarm clock",
     "zaspałem"
   ],
+  "gifQueriesRescued": [
+    "saved just in time",
+    "phew relief",
+    "better late than never",
+    "last second save",
+    "finally awake"
+  ],
   "gifFallbackGreeted": [],
-  "gifFallbackMissed": []
+  "gifFallbackMissed": [],
+  "gifFallbackRescued": []
 }

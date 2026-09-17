@@ -6,8 +6,10 @@ const cfg = {
   watchedUserId: '111111111111111111',
   colorGreeted: 16756802,
   colorMissed: 7419299,
+  colorRescued: 3066993,
   replies: ['Dzień dobry {user}!'],
   reminders: ['{user}, gdzie powitanie?'],
+  rescues: ['Dzień uratowany {user}! Seria wraca do {streak}.'],
 };
 
 test('pusta pula mowi ktory config poprawic', () => {
@@ -43,6 +45,13 @@ test('payload przypomnienia: inny kolor, inna pula', () => {
   const p = buildPayload({ greeted: false, streak: 0, config: cfg, rng: () => 0 });
   assert.equal(p.embeds[0].color, cfg.colorMissed);
   assert.match(p.content, /gdzie powitanie/);
+});
+
+test('payload rescue: pula rescues, wlasny kolor, seria w stopce', () => {
+  const p = buildPayload({ rescued: true, streak: 8, config: cfg, rng: () => 0 });
+  assert.equal(p.content, 'Dzień uratowany <@111111111111111111>! Seria wraca do 8.');
+  assert.equal(p.embeds[0].color, cfg.colorRescued);
+  assert.match(p.embeds[0].footer.text, /8 dni/);
 });
 
 test('gif laduje w embedzie jako obrazek; bez gifa embed nie ma image', () => {

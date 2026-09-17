@@ -23,14 +23,14 @@ export function streakFooter(streak, greeted) {
 }
 
 /** Gotowy payload webhooka. Tekst w content (widzi kazdy), embed to ozdoba: gif, kolor, stopka. */
-export function buildPayload({ greeted, streak, config, gifUrl = null, rng = Math.random }) {
+export function buildPayload({ greeted, rescued = false, streak, config, gifUrl = null, rng = Math.random }) {
   const mention = `<@${config.watchedUserId}>`;
-  const pool = greeted ? config.replies : config.reminders;
+  const pool = rescued ? config.rescues : greeted ? config.replies : config.reminders;
   const text = render(pick(pool, rng), { user: mention, streak });
 
   const embed = {
-    color: greeted ? config.colorGreeted : config.colorMissed,
-    footer: { text: streakFooter(streak, greeted) },
+    color: rescued ? config.colorRescued : greeted ? config.colorGreeted : config.colorMissed,
+    footer: { text: streakFooter(streak, greeted || rescued) },
   };
   if (gifUrl) embed.image = { url: gifUrl };
 

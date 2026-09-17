@@ -15,8 +15,8 @@ const config = JSON.parse(readFileSync(new URL(`../${cfgFile}`, import.meta.url)
 const yml = readFileSync(new URL(`../${ymlFile}`, import.meta.url), 'utf8');
 const crons = [...yml.matchAll(/cron:\s*'(\d+) (\d+) \* \* \*'/g)].map(([, m, h]) => ({ m: +m, h: +h }));
 
-test(`${ymlFile}: workflow ma dokladnie dwa crony (lato/zima)`, () => {
-  assert.equal(crons.length, 2, `znaleziono: ${JSON.stringify(crons)}`);
+test(`${ymlFile}: workflow ma co najmniej dwa crony (lato/zima)`, () => {
+  assert.ok(crons.length >= 2, `znaleziono: ${JSON.stringify(crons)}`);
 });
 
 test(`${ymlFile}: minuty cronow zgadzaja sie z checkMinute`, () => {

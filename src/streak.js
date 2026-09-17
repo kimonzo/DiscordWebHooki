@@ -18,16 +18,39 @@ export async function save(path, state) {
 
 /** Nowy stan po dzisiejszym sprawdzeniu. Czysta funkcja. */
 export function advance(state, todayKey, greeted) {
-  const streak = greeted ? state.streak + 1 : 0;
+  if (greeted) {
+    const streak = state.streak + 1;
+    return {
+      streak,
+      bestStreak: Math.max(state.bestStreak ?? 0, streak),
+      lastRunDate: todayKey,
+      lastResult: 'greeted',
+    };
+  }
   return {
-    streak,
-    bestStreak: Math.max(state.bestStreak ?? 0, streak),
+    streak: 0,
+    bestStreak: Math.max(state.bestStreak ?? 0, 0),
     lastRunDate: todayKey,
-    lastResult: greeted ? 'greeted' : 'missed',
+    lastResult: 'missed',
+    preMissStreak: state.streak ?? 0,
   };
 }
 
 /** Czy dzisiaj juz sprawdzalismy. Chroni przed zdublowanym cronem. */
 export function alreadyRanToday(state, todayKey) {
   return state.lastRunDate === todayKey;
+}
+
+export function canRescue(state, todayKey) {
+  return state.lastRunDate === todayKey && state.lastResult === 'missed';
+}
+
+export function rescue(state, todayKey) {
+  const streak = (state.preMissStreak ?? 0) + 1;
+  return {
+    streak,
+    bestStreak: Math.max(state.bestStreak ?? 0, streak),
+    lastRunDate: todayKey,
+    lastResult: 'rescued',
+  };
 }

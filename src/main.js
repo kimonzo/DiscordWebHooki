@@ -8,7 +8,7 @@ import { findGreeting } from './greeting.js';
 import { buildPayload } from './messages.js';
 import { pickGif } from './gif.js';
 import { fetchMessagesSince, sendWebhook } from './discord.js';
-import { load, save, advance, alreadyRanToday } from './streak.js';
+import { load, save, advance, alreadyRanToday, canRescue, rescue } from './streak.js';
 import { requireEnv } from './env.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,8 +34,10 @@ export async function run({ argv = [], env = process.env, now = new Date() } = {
 
   const state = await load(STATE_PATH);
 
+  const rescueMode = !force && canRescue(state, today);
+
   // Bramka 2: idempotencja. Zdublowany cron nie wysle drugiej wiadomosci.
-  if (!force && alreadyRanToday(state, today)) {
+  if (!force && alreadyRanToday(state, today) && !rescueMode) {
     console.log(`[pomijam] ${today} juz sprawdzony (wynik: ${state.lastResult}).`);
     return { skipped: 'already-ran' };
   }
@@ -43,10 +45,48 @@ export async function run({ argv = [], env = process.env, now = new Date() } = {
   const { DISCORD_BOT_TOKEN: token } = requireEnv(env, ['DISCORD_BOT_TOKEN']);
   const webhookUrl = dryRun ? null : requireEnv(env, ['DISCORD_WEBHOOK_URL']).DISCORD_WEBHOOK_URL;
 
-  const since = windowStart(now, config);
   // Gorna granica to nominalne 8:30, nawet gdy GitHub odpalil run o 14:00 —
   // inaczej spozniony cron zaliczalby jako "poranne" powitanie napisane w poludnie.
   const until = checkTimeToday(now, config);
+
+  if (rescueMode) {
+    const fromWatchedLate = (await fetchMessagesSince({
+      token,
+      channelId: config.channelId,
+      since: until,
+      maxPages: config.maxPages,
+    })).filter(
+      (m) => m.author?.id === config.watchedUserId
+        && new Date(m.timestamp) > until
+        && localDateKey(new Date(m.timestamp), config.timezone) === today,
+    );
+
+    const hit = findGreeting(fromWatchedLate, config.greetings);
+    const nominal = `${config.checkHour}:${String(config.checkMinute).padStart(2, '0')}`;
+    console.log(`[rescue] ${fromWatchedLate.length} wiadomosci od ${config.watchedUserName} po ${nominal}${hit ? `, spoznione powitanie o ${hit.timestamp}` : ', wciaz brak powitania'}`);
+    if (!hit) return { rescued: false };
+
+    const nextState = rescue(state, today);
+    const gifUrl = await pickGif({
+      queries: config.gifQueriesRescued,
+      fallback: config.gifFallbackRescued,
+      env, log: console.log,
+    });
+    const payload = buildPayload({ rescued: true, streak: nextState.streak, config, gifUrl });
+
+    if (dryRun) {
+      console.log('[dry-run] nic nie wysylam. Payload:');
+      console.log(JSON.stringify(payload, null, 2));
+      return { rescued: true, streak: nextState.streak, dryRun: true };
+    }
+
+    await sendWebhook({ url: webhookUrl, payload });
+    console.log(`[wyslano] dzien uratowany, seria: ${nextState.streak}`);
+    await save(STATE_PATH, nextState);
+    return { rescued: true, streak: nextState.streak };
+  }
+
+  const since = windowStart(now, config);
   const late = Math.round((now - until) / 60000);
   console.log(`[okno] od ${since.toISOString()} do ${until.toISOString()}${late > 5 ? ` (run spozniony o ${late} min)` : ''}`);
 
