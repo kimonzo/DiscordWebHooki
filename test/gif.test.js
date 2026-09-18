@@ -11,7 +11,18 @@ test('bez klucza i bez listy: null, bez bledu', async () => {
 });
 
 test('Tenor: losuje z wynikow', async () => {
-  assert.equal(await pickGif({ queries: ['x'], env: { TENOR_API_KEY: 'k' }, rng: () => 0.9, fetchImpl: ok(tenorBody) }), 'https://tenor/b.gif');
+  const got = new Set();
+  for (let i = 0; i < 30; i++) got.add(await pickGif({ queries: ['x'], env: { TENOR_API_KEY: 'k' }, fetchImpl: ok(tenorBody) }));
+  assert.deepEqual([...got].sort(), ['https://tenor/a.gif', 'https://tenor/b.gif'], 'siega po oba wyniki');
+});
+
+test('hasla sa tasowane — nie zawsze to samo idzie pierwsze', async () => {
+  const first = new Set();
+  for (let i = 0; i < 40; i++) {
+    await pickGif({ queries: ['a', 'b', 'c'], env: { GIPHY_API_KEY: 'k' },
+      fetchImpl: async (u) => { first.add(new URL(u).searchParams.get('q')); return { ok: true, json: async () => giphyBody }; } });
+  }
+  assert.ok(first.size >= 2, `zawsze to samo haslo: ${[...first]}`);
 });
 
 test('Tenor przekazuje klucz i zapytanie', async () => {
@@ -48,4 +59,39 @@ test('brak wynikow u dostawcy -> nastepny dostawca', async () => {
   let n = 0;
   const fetchImpl = async () => (++n === 1 ? { ok: true, json: async () => ({ results: [] }) } : { ok: true, json: async () => giphyBody });
   assert.equal(await pickGif({ queries: ['x'], env: { TENOR_API_KEY: 'a', GIPHY_API_KEY: 'b' }, fetchImpl }), 'https://giphy/a.gif');
+});
+
+// --- 2026-09-18: Giphy nie mial nic na "zaspałem" i bot odpuscil gifa po jednej probie ---
+
+test('AWARIA: puste wyniki dla jednego hasla -> probuje kolejne', async () => {
+  const asked = [];
+  const fetchImpl = async (u) => {
+    const q = new URL(u).searchParams.get('q');
+    asked.push(q);
+    return { ok: true, json: async () => (q === 'zaspalem' ? { data: [] } : giphyBody) };
+  };
+  const url = await pickGif({ queries: ['zaspalem', 'wake up'], env: { GIPHY_API_KEY: 'k' }, fetchImpl });
+  assert.equal(url, 'https://giphy/a.gif', 'puste haslo nie moze przekreslic gifa');
+  assert.ok(asked.includes('wake up'), `pytal tylko o: ${asked.join(', ')}`);
+});
+
+test('probuje kazde haslo raz, nie wiecej', async () => {
+  let n = 0;
+  const fetchImpl = async () => { n++; return { ok: true, json: async () => ({ data: [] }) }; };
+  assert.equal(await pickGif({ queries: ['a', 'b', 'c'], env: { GIPHY_API_KEY: 'k' }, fetchImpl }), null);
+  assert.equal(n, 3);
+});
+
+test('komunikat nie oskarza braku klucza, gdy klucz jest', async () => {
+  const logs = [];
+  await pickGif({ queries: ['a'], env: { GIPHY_API_KEY: 'k' }, fetchImpl: async () => ({ ok: true, json: async () => ({ data: [] }) }), log: (m) => logs.push(m) });
+  const last = logs.at(-1);
+  assert.doesNotMatch(last, /brak klucza/, `mylacy komunikat: ${last}`);
+  assert.match(last, /zadne haslo|bez gifa/);
+});
+
+test('bez zadnego klucza mowi wprost o kluczu', async () => {
+  const logs = [];
+  await pickGif({ queries: ['a'], env: {}, log: (m) => logs.push(m), fetchImpl: async () => { throw new Error('nie pytaj'); } });
+  assert.match(logs.at(-1), /brak klucza/);
 });

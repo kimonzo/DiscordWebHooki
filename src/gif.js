@@ -24,26 +24,36 @@ async function fromGiphy(key, query, rng, fetchImpl) {
   return urls.length ? urls[Math.floor(rng() * urls.length)] : null;
 }
 
+/** Tasuje kopie listy (Fisher-Yates), zeby kolejnosc prob byla losowa, ale pelna. */
+function shuffled(list, rng) {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 /**
- * Zwraca URL gifa albo null. Kolejnosc: Tenor -> Giphy -> lista z configu -> null.
- * Zapytania (queries) losowane, zeby ten sam dzien nie dawal wciaz tej samej frazy.
+ * Zwraca URL gifa albo null. Dla kazdego hasla (w losowej kolejnosci) probuje
+ * Tenora, potem Giphy; dopiero gdy zadne haslo nic nie da — lista z configu, potem null.
+ * Jedno haslo bez wynikow nie moze przekreslic calej wysylki: 2026-09-18 Giphy nie mial
+ * nic na "zaspalem" i wiadomosc poszla bez gifa, choc inne hasla dzialaly.
  */
 export async function pickGif({ queries = [], fallback = [], env = {}, rng = Math.random, fetchImpl = fetch, log = () => {} }) {
-  const query = queries.length ? queries[Math.floor(rng() * queries.length)] : null;
-
   const providers = [
-    env.TENOR_API_KEY && ['Tenor', () => fromTenor(env.TENOR_API_KEY, query, rng, fetchImpl)],
-    env.GIPHY_API_KEY && ['Giphy', () => fromGiphy(env.GIPHY_API_KEY, query, rng, fetchImpl)],
+    env.TENOR_API_KEY && ['Tenor', (q) => fromTenor(env.TENOR_API_KEY, q, rng, fetchImpl)],
+    env.GIPHY_API_KEY && ['Giphy', (q) => fromGiphy(env.GIPHY_API_KEY, q, rng, fetchImpl)],
   ].filter(Boolean);
 
-  if (query) {
+  for (const query of shuffled(queries, rng)) {
     for (const [name, get] of providers) {
       try {
-        const url = await get();
+        const url = await get(query);
         if (url) { log(`[gif] ${name}: "${query}" -> ${url}`); return url; }
-        log(`[gif] ${name}: brak wynikow dla "${query}"`);
+        log(`[gif] ${name}: brak wynikow dla "${query}", probuje dalej`);
       } catch (err) {
-        log(`[gif] ${name} nie odpowiada (${err.message}), probuje dalej`);
+        log(`[gif] ${name} nie odpowiada na "${query}" (${err.message}), probuje dalej`);
       }
     }
   }
@@ -53,6 +63,8 @@ export async function pickGif({ queries = [], fallback = [], env = {}, rng = Mat
     log(`[gif] z listy w config.json -> ${url}`);
     return url;
   }
-  log('[gif] brak klucza API i pusta lista — wiadomosc bez gifa');
+  log(providers.length === 0
+    ? '[gif] brak klucza API (TENOR_API_KEY / GIPHY_API_KEY) i pusta lista — wiadomosc bez gifa'
+    : `[gif] zadne haslo (${queries.length}) nic nie zwrocilo — wiadomosc bez gifa`);
   return null;
 }

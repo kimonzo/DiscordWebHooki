@@ -58,18 +58,24 @@
     "Uwaga {user}, to jest przypomnienie. Więcej nie mam — milknę do jutra jak dżentelmen. 🫡"
   ],
   "gifQueriesGreeted": [
-    "dzień dobry",
     "good morning",
     "morning coffee",
-    "sunrise happy",
-    "good morning cat"
+    "sunrise",
+    "good morning cat",
+    "wake up happy",
+    "rise and shine",
+    "morning stretch",
+    "hello there"
   ],
   "gifQueriesMissed": [
     "wake up",
-    "pobudka",
+    "oversleeping",
     "sleeping",
     "alarm clock",
-    "zaspałem"
+    "still sleeping",
+    "tired morning",
+    "snooze",
+    "sleepy cat"
   ],
   "gifFallbackGreeted": [],
   "gifFallbackMissed": []
