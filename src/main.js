@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-import { isCheckTime, localDateKey, windowStart, checkTimeToday } from './window.js';
+import { isCheckTime, localDateKey, windowStart, windowEnd } from './window.js';
 import { findGreeting } from './greeting.js';
 import { buildPayload } from './messages.js';
 import { pickGif } from './gif.js';
@@ -44,9 +44,7 @@ export async function run({ argv = [], env = process.env, now = new Date() } = {
   const webhookUrl = dryRun ? null : requireEnv(env, ['DISCORD_WEBHOOK_URL']).DISCORD_WEBHOOK_URL;
 
   const since = windowStart(now, config);
-  // Gorna granica to nominalne 8:30, nawet gdy GitHub odpalil run o 14:00 —
-  // inaczej spozniony cron zaliczalby jako "poranne" powitanie napisane w poludnie.
-  const until = checkTimeToday(now, config);
+  const until = windowEnd(now, config);
   const late = Math.round((now - until) / 60000);
   console.log(`[okno] od ${since.toISOString()} do ${until.toISOString()}${late > 5 ? ` (run spozniony o ${late} min)` : ''}`);
 

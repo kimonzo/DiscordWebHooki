@@ -67,6 +67,18 @@ export function checkTimeToday(now, { timezone, checkHour, checkMinute = 0 }) {
   return zonedTimeToUtc({ year, month, day, hour: checkHour, minute: checkMinute }, timezone);
 }
 
+/**
+ * Gorna granica okna obserwacji: pozniejsza z dwoch — nominalna godzina sprawdzenia
+ * albo moment uruchomienia. Cron GitHuba potrafi spoznic sie o kilka godzin
+ * (2026-09-18: 5 h 6 min); wszystko, co pilnowana osoba napisala do chwili
+ * uruchomienia, ma sie liczyc — inaczej bot wysyla przypomnienie komus,
+ * kto przywital sie cztery godziny wczesniej.
+ */
+export function windowEnd(now, config) {
+  const nominal = checkTimeToday(now, config);
+  return now > nominal ? now : nominal;
+}
+
 /** Poczatek dzisiejszego okna obserwacji jako instant UTC. */
 export function windowStart(now, { timezone, windowStartHour }) {
   const { year, month, day } = zonedParts(now, timezone);

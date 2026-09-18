@@ -110,9 +110,10 @@ embedami. Embed pod spodem to ozdoba: GIF, kolorowy pasek, stopka z serią.
   pudła częściej niż to jedno fałszywe trafienie. Świadoma decyzja.
 - **Cron GitHuba bywa mocno spóźniony.** Zmierzone 2026-09-15 na tym repo: **5 h 28 min**.
   `schedule` działa best-effort, a prywatne repo na darmowym planie są deprioritetyzowane.
-  Stąd `graceMinutes: 900` — run zalicza się aż do 23:30. Godzina wysłania jest więc luźna,
-  ale **werdykt nie**: górna granica okna obserwacji to zawsze nominalne 8:30, niezależnie od
-  tego, kiedy runner wystartował. Spóźniony cron nie zaliczy powitania napisanego w południe.
+  Stąd `graceMinutes: 900` — run zalicza się aż do 23:30. Górna granica okna obserwacji to
+  **moment uruchomienia** (albo 8:30, gdy cron zdąży na czas): liczy się wszystko, co pilnowana
+  osoba napisała, zanim bot się odezwał. Inaczej wychodziły absurdy — 2026-09-18 cron ruszył
+  o 13:36 i wysłał przypomnienie komuś, kto przywitał się o 9:52.
 - **Wyłączanie nieaktywnych workflow.** GitHub wyłącza crony po 60 dniach bez aktywności
   w repo. Bot commituje codziennie, co powinno wystarczyć — ale gdyby przyszedł mail
   „workflow disabled", jedno kliknięcie *Enable workflow* w zakładce Actions naprawia sprawę.

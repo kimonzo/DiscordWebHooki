@@ -79,14 +79,28 @@ test('lato: drugi cron (9:30) jest dogrywka, zima: pierwszy (7:30) odpada', () =
 });
 
 // --- opoznienie crona nie moze zmieniac werdyktu (GitHub potrafi spoznic sie 5 h) ---
-import { checkTimeToday } from '../src/window.js';
+import { checkTimeToday, windowEnd } from '../src/window.js';
 
-test('checkTimeToday: moment nominalnego sprawdzenia, niezaleznie od tego kiedy run wystartowal', () => {
+test('checkTimeToday: nominalna godzina sprawdzenia dla dzisiejszej doby', () => {
   const c = { timezone: 'Europe/Warsaw', checkHour: 8, checkMinute: 30 };
-  const punktualnie = checkTimeToday(new Date('2026-09-16T06:30:00Z'), c);
-  const spoznione = checkTimeToday(new Date('2026-09-16T13:58:00Z'), c);
-  assert.equal(punktualnie.toISOString(), '2026-09-16T06:30:00.000Z');
-  assert.equal(spoznione.toISOString(), punktualnie.toISOString(), 'run o 15:58 pyta o ten sam moment co punktualny');
+  assert.equal(checkTimeToday(new Date('2026-09-16T06:30:00Z'), c).toISOString(), '2026-09-16T06:30:00.000Z');
+  assert.equal(checkTimeToday(new Date('2026-09-16T13:58:00Z'), c).toISOString(), '2026-09-16T06:30:00.000Z');
+});
+
+// --- 2026-09-18: Tomcio napisal o 9:52, cron ruszyl o 13:36, bot wyslal przypomnienie ---
+test('AWARIA 2026-09-18: gorna granica okna to moment uruchomienia, nie 8:30', () => {
+  const c = { timezone: 'Europe/Warsaw', checkHour: 8, checkMinute: 30 };
+  const run = new Date('2026-09-18T11:36:00Z');            // 13:36 w Polsce
+  const greeting = new Date('2026-09-18T07:52:00Z');       // 9:52 — po deadline, przed runem
+  assert.ok(greeting <= windowEnd(run, c), 'powitanie napisane przed uruchomieniem ma sie liczyc');
+});
+
+test('windowEnd: run punktualny konczy okno na 8:30, spozniony — na sobie', () => {
+  const c = { timezone: 'Europe/Warsaw', checkHour: 8, checkMinute: 30 };
+  const punktualny = new Date('2026-09-18T06:30:00Z');
+  assert.equal(windowEnd(punktualny, c).toISOString(), '2026-09-18T06:30:00.000Z', 'nie siega w przyszlosc');
+  const spozniony = new Date('2026-09-18T11:36:00Z');
+  assert.equal(windowEnd(spozniony, c).toISOString(), spozniony.toISOString(), 'siega do teraz');
 });
 
 test('AWARIA 2026-09-15: cron spozniony o 5,5 h nadal wpada w okno', () => {
